@@ -9,7 +9,7 @@
 
 using namespace std;
 
-bool v = false;  // Verbose output flag
+bool v = false, vv = false;  // Verbose output flag
 
 /////////////////////////////////////////////////
 // ===== SHA-256 CONSTANTS AND FUNCTIONS ===== //
@@ -75,11 +75,15 @@ int main(int argc, char *argv[]){
         for (i = 0; i < argc; i++){
             arg = argv[i];
             if (arg == "-h"){  // Print help
-                cout << "Usage: " << argv[0] << endl;
+                cout << "SHA-256 tool by Tombuster - help:\n";
                 cout << "\t-i <input_path>\t\tInput file path\n";
                 cout << "\t-o <output_path>\tOutput file path (if you'd like to write the output to a file)\n";
-                cout << "\t-c <hash>\t\tCompare calculated hash with the one provided after -c\n";
+                cout << "\t-c <hash>\t\tCheck calculated hash against the one provided after -c\n";
                 cout << "\t-v\t\t\tVerbose\n";
+                cout << "\t-vv\t\t\tVery verbose\n";
+                cout << "\t-h\t\t\tDisplay this help message\n";
+                cout << "If no input file path is provided, you will be prompted to add one through the command line.\n";
+                cout << "\nThanks for downloading! (^-^d)\n\n";
                 return 0;
             }
             else if (arg == "-i" && i + 1 < argc){
@@ -95,15 +99,19 @@ int main(int argc, char *argv[]){
             else if (arg == "-v"){
                 v = true;
             }
+            else if (arg == "-vv"){
+                v = true;
+                vv = true;
+            }
         }
     }
 
-    if (v){
-        cout << "\t[v] Received flags: ";
+    if (vv){
+        cout << "\t[vv] Received flags: ";
         if (!in_path.empty()) cout << "i, ";
         if (!out_path.empty()) cout << "o, ";
         if (c) cout << "c, ";
-        cout << "v." << endl;
+        cout << "vv." << endl;
     }
 
     if (in_path.empty()){
@@ -119,13 +127,13 @@ int main(int argc, char *argv[]){
     int i;
 
     ifstream infile(in_path, ios_base::binary);  // Read file as bits
-    if (v) cout << "\t[v] File " << in_path << " opened..." << endl;
+    if (vv) cout << "\t[vv] File " << in_path << " opened..." << endl;
 
     vector<unsigned char> buffer {istreambuf_iterator<char>(infile), istreambuf_iterator<char>()};
     if (v) cout << "\t[v] File " << in_path << " buffered successfully...\n\t    Read " << buffer.size() << " bytes..." << endl;
 
     infile.close();
-    if (v) cout << "\t[v] File " << in_path << " closed...\n" << endl;
+    if (vv) cout << "\t[vv] File " << in_path << " closed...\n" << endl;
 
     pad_message(buffer);
     if (v) cout << "\t[v] Padding successful...\n\t    Length is " << buffer.size() << " bytes..." << endl;
@@ -135,26 +143,27 @@ int main(int argc, char *argv[]){
     // ===== CALCULATING HASH ===== //
     //////////////////////////////////
 
+    if (v) cout << "\t[v] Beginning hash calculations..." << endl;
     int j, w_index;
     for (i = 0; i < buffer.size(); i += 64){  // Extracting 512-bit long blocks
 
-        if (v) cout << "\t[v] Processing block #" << i/64 << "..." << endl;
+        if (vv) cout << "\t[vv] Processing block #" << i/64 << "..." << endl;
         uint32_t w[64] {}, tmp1, tmp2, s1, ch, t1, s0, maj, t2, h[8] {};
 
         for (j = 0; j < 64; j += 4){
             w[j/4] = (buffer[j] << 24) + (buffer[j+1] << 16) + (buffer[j+2] << 8) + buffer[j+3];
         }
-        if (v) cout << "\t[v] Parsed 16 32-bit long words...\n\t    Calculating 48 more words..." << endl;
+        if (vv) cout << "\t[vv] Parsed 16 32-bit long words...\n\t     Calculating 48 more words..." << endl;
 
         for (j = 16; j < 64; j++){
             tmp1 = rot_right(w[j - 15], 7) ^ rot_right(w[j - 15], 18) ^ (w[j - 15] >> 3);
             tmp2 = rot_right(w[j - 2], 17) ^ rot_right(w[j - 2], 19) ^ (w[j - 2] >> 10);
             w[j] = ((w[j - 16] + tmp1 + w[j - 7] + tmp2) & 0xFFFFFFFF);
         }
-        if (v) cout << "\t[v] Successfully calculated additional words..." << endl;
+        if (vv) cout << "\t[vv] Successfully calculated additional words..." << endl;
 
         copy(begin(H), end(H), begin(h));
-        if (v) cout << "\t[v] Copied H register...\n\t    Beginning calculations..." << endl;
+        if (vv) cout << "\t[vv] Copied H register...\n\t     Beginning calculations..." << endl;
 
         for (j = 0; j < 64; j++){
             s1 = S1(h[4]);
@@ -173,7 +182,7 @@ int main(int argc, char *argv[]){
             h[1] = h[0];
             h[0] = (t1 + t2) & 0xFFFFFFFF;
         }
-        if (v) cout << "\t[v] Calculations successful...\n\t    Updating H register..." << endl;
+        if (vv) cout << "\t[vv] Calculations successful...\n\t     Updating H register..." << endl;
 
         H[0] = (H[0] + h[0]) & 0xFFFFFFFF;
         H[1] = (H[1] + h[1]) & 0xFFFFFFFF;
@@ -183,7 +192,7 @@ int main(int argc, char *argv[]){
         H[5] = (H[5] + h[5]) & 0xFFFFFFFF;
         H[6] = (H[6] + h[6]) & 0xFFFFFFFF;
         H[7] = (H[7] + h[7]) & 0xFFFFFFFF;
-        if (v) cout << "\t[v] H register successfully updated..." << endl;
+        if (vv) cout << "\t[vv] H register successfully updated..." << endl;
     }
 
 
@@ -212,6 +221,15 @@ int main(int argc, char *argv[]){
         cout << endl << "Expected:\t" << compare << endl;
         cout << "Calculated:\t" << hash << endl;
         cout << endl << "\tResult: " << (compare.compare(hash) == 0 ? "MATCH" : "INCORRECT") << endl;
+        if(!out_path.empty()){
+            if (vv) cout << "\t[vv] Opening " << out_path << " for writing..." << endl;
+            ofstream output(out_path);
+            if (v) cout << "\t[v] Opened " << out_path << " successfully..." << endl;
+            output << hash;
+            if (v) cout << "\t[v] Writing successful...\n\t    Closing " << out_path << "..." << endl;
+            output.close();
+            if (vv) cout << "\t[vv] Closed " << out_path << " successfully..." << endl;
+        }
     }
     else {
         if(out_path.empty()){
@@ -219,13 +237,13 @@ int main(int argc, char *argv[]){
             cout << hash << endl;
         }
         else {
-            if (v) cout << "\t[v] Opening " << out_path << " for writing..." << endl;
+            if (vv) cout << "\t[vv] Opening " << out_path << " for writing..." << endl;
             ofstream output(out_path);
             if (v) cout << "\t[v] Opened " << out_path << " successfully..." << endl;
             output << hash;
-            if (v) cout << "\t[v] Writing..." << endl;
-            output.close();
             if (v) cout << "\t[v] Writing successful...\n\t    Closing " << out_path << "..." << endl;
+            output.close();
+            if (vv) cout << "\t[vv] Closed " << out_path << " successfully..." << endl;
         }
     }
 
